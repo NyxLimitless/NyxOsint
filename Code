@@ -1,0 +1,35 @@
+import requests import whois import argparse import os import socket from PIL import Image from PIL.ExifTags import TAGS
+
+def check_email(email): url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}" headers = {"User-Agent": "OSINT-Mobile"} response = requests.get(url, headers=headers) if response.status_code == 200: print(f"[!] {email} has been found in data breaches!") else: print(f"[-] {email} not found in breaches.")
+
+def get_domain_info(domain): try: domain_info = whois.whois(domain) print(f"[+] Domain Info for {domain}:\n{domain_info}") except Exception as e: print(f"[-] Error fetching domain info: {e}")
+
+def extract_metadata(image_path): try: image = Image.open(image_path) exif_data = image._getexif() if exif_data: print("[+] Metadata Found:") for tag_id, value in exif_data.items(): tag = TAGS.get(tag_id, tag_id) print(f"{tag}: {value}") else: print("[-] No metadata found.") except Exception as e: print(f"[-] Error extracting metadata: {e}")
+
+def ip_lookup(ip): try: response = requests.get(f"http://ip-api.com/json/{ip}") data = response.json() if data['status'] == 'success': print(f"[+] IP Information for {ip}:") print(f"Country: {data['country']}") print(f"Region: {data['regionName']}") print(f"City: {data['city']}") print(f"Latitude: {data['lat']}, Longitude: {data['lon']}") print(f"ISP: {data['isp']}") else: print("[-] Invalid IP address.") except Exception as e: print(f"[-] Error fetching IP info: {e}")
+
+def shodan_scan(ip, api_key): try: url = f"https://api.shodan.io/shodan/host/{ip}?key={api_key}" response = requests.get(url) data = response.json() print(f"[+] Shodan Scan Results for {ip}:") print(data) except Exception as e: print(f"[-] Error performing Shodan scan: {e}")
+
+def social_media_lookup(username): social_platforms = { "Twitter": f"https://twitter.com/{username}", "Instagram": f"https://instagram.com/{username}", "GitHub": f"https://github.com/{username}" } print(f"[+] Searching for username: {username}") for platform, url in social_platforms.items(): response = requests.get(url) if response.status_code == 200: print(f"[!] Found {username} on {platform}: {url}") else: print(f"[-] Not found on {platform}")
+
+def email_geolocation(email): domain = email.split('@')[-1] print(f"[+] Checking location for email: {email}") try: domain_info = whois.whois(domain) print(f"[+] Email domain WHOIS info:\n{domain_info}") except Exception as e: print(f"[-] Error fetching WHOIS data: {e}") try: response = requests.get(f"https://emailrep.io/{email}") if response.status_code == 200: data = response.json() print(f"[+] Email Reputation Data:\n{data}") else: print("[-] No additional email data found.") except Exception as e: print(f"[-] Error checking email reputation: {e}")
+
+if name == "main": parser = argparse.ArgumentParser(description="Mobile OSINT Tool") parser.add_argument("--email", help="Check email breaches") parser.add_argument("--domain", help="Get domain WHOIS info") parser.add_argument("--image", help="Extract metadata from image") parser.add_argument("--ip", help="IP geolocation lookup") parser.add_argument("--shodan", help="Shodan scan (requires API key)") parser.add_argument("--username", help="Social media username lookup") parser.add_argument("--apikey", help="Shodan API key") parser.add_argument("--emailgeo", help="Email domain geolocation lookup")
+
+args = parser.parse_args()
+
+if args.email:
+    check_email(args.email)
+if args.domain:
+    get_domain_info(args.domain)
+if args.image:
+    extract_metadata(args.image)
+if args.ip:
+    ip_lookup(args.ip)
+if args.shodan and args.apikey:
+    shodan_scan(args.shodan, args.apikey)
+if args.username:
+    social_media_lookup(args.username)
+if args.emailgeo:
+    email_geolocation(args.emailgeo)
+
